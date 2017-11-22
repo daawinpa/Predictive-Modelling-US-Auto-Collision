@@ -1,0 +1,175 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+ 
+# Southern Farm Bureau Casualty Insurance Company Symbols Modelling 
+<br />
+*`r input$name`* <br />   
+*`r as.character(format(Sys.Date(), format="%B %d, %Y"))`*
+
+<br />
+
+###1. Summary Statistics
+
+This report was created using the `r input$dataset` data set.  The dependent variable in my analysis is `r input$dv` and independent variable in my analysis is `r input$iv`. 
+
+<br />
+
+The summary statistics of `r input$dv` and `r input$iv` appear below. 
+```{r summary, echo=FALSE}
+  mlb11 <- datasetInput()
+  temp <- cbind(mlb11[input$dv], mlb11[input$iv])
+  summary(temp)
+```
+
+`r input$text_summary` 
+
+<br />
+
+###2. Histograms 
+
+The histograms of `r input$dv` and `r input$iv` appear below. <br />
+<br />
+<br />
+```{r hist_dv, echo=FALSE}
+   x    <- VehiclesSymbolDatNew[,input$dv]  
+  bins <- seq(min(x), max(x), length.out = input$bins_dv + 1)
+ 
+    hist(x, breaks = bins, col = 'green', border = 'blue', main = 'Dependent Variable', xlab = input$dv)
+```
+
+`r input$text_hist_dv`
+
+```{r hist_iv, echo=FALSE}
+   x    <- VehiclesSymbolDatNew[,input$iv]  
+ bins <- seq(min(x), max(x), length.out = input$bins_iv + 1)
+
+  hist(x, breaks = bins, col = 'green', border = 'blue', main = 'Independent Variable', xlab = input$iv)
+```
+
+`r input$text_hist_iv`
+
+
+<br />
+
+###3. Scatter Plot 
+
+A scatter plot of `r input$dv` and `r input$iv` appears below.  <br />
+<br />
+
+```{r scatter, echo=FALSE}
+
+  plot(VehiclesSymbolDatNew[,input$iv],VehiclesSymbolDatNew[,input$dv],
+       xlab = input$iv, ylab = input$dv,  main = "Scatter Plot of Independent and Dependent Variables", pch = 16, 
+       col = "black", cex = 1) 
+  
+  abline(glm(VehiclesSymbolDatNew[,input$dv]~VehiclesSymbolDatNew[,input$iv]), col="grey", lwd = 2) 
+```
+
+`r input$text_scatter`
+
+
+
+###5. Model
+
+A bivariate  model predicting `r input$dv` with `r input$iv` appears below. 
+
+
+
+<br />
+
+
+###6. Model Evaluation
+```{r}
+ head(cbind( Train_MSE=mean((VehiclesSymbolDatNew$LossCostMetric -   model()$fitted.values)^2),AICValue=AICtweedie(model(),k=2)))
+```
+
+
+
+### 7. Model Factors
+
+```{r}
+ options(scipen = 999)
+ round(exp(coef(model())),digits=4)
+   
+```
+
+
+###8. Slope Plots
+
+```{r}
+   par(mfrow = c(3,4),bg = 'olivedrab1')
+    termplot(model(),main="Slope of Selected Predictor") 
+    
+```
+
+
+###9. Comparative Fitted Model Plots 
+```{r text_AvgGraph, echo=FALSE}
+ par(mfrow = c(1,1))
+      datasetInputfit= cbind(VehiclesSymbolDatNew[,], FittedLossCost=model()$fitted.values)
+  
+      AggtableObsFit<- aggregate(cbind(LossCostMetric,FittedLossCost ) ~ VehiclesSymbolDatNew[,input$iv], data = datasetInputfit, mean)
+      counts <- table(datasetInputfit[,input$iv])
+      counts <- prop.table(counts)
+      par(mar=c(5, 4, 4, 6) + 0.1)
+      
+      barplot(counts, pch=15,  xlab=" ", ylab=" ", ylim=c(0,max(counts)+.1), 
+              axes=FALSE,  col="green")
+      mtext("Proportion",side=4,col="green",line=4) 
+      axis(4,  col="green",col.axis="green",las=1)
+      par(new=TRUE)
+       plot(1:length(AggtableObsFit$LossCostMetric),AggtableObsFit$LossCostMetric, col="red", type="b",pch=19,lwd=2, ylab=" ", xlab=" ",xaxt = "n",
+            ylim=c(min(AggtableObsFit$LossCostMetric,AggtableObsFit$FittedLossCost),max(AggtableObsFit$LossCostMetric,AggtableObsFit$FittedLossCost)))
+      par(new=TRUE)
+      plot(1:length(AggtableObsFit$FittedLossCost),AggtableObsFit$FittedLossCost, col="blue", type="b",pch=18,xlab=" ", ylab=" ",lwd=2, axes=FALSE,xaxt = "n",
+           ylim=c(min(AggtableObsFit$LossCostMetric,AggtableObsFit$FittedLossCost),max(AggtableObsFit$LossCostMetric,AggtableObsFit$FittedLossCost)))
+      legend("topleft", legend=c("Observed Average", "Fitted Model Average"),
+             col=c("red", "blue"), lty=1:3, cex=1)
+      grid(nx=NULL,ny=NULL)
+
+  
+```
+
+`input$text_AvgGraph`
+
+
+
+###10. Score Model Graph  
+
+```{r text_ScoreGraph, echo=FALSE}
+   par(mfrow = c(1,1))
+    
+    datasetInputfit= cbind(VehiclesSymbolDatNew[,], FittedLossCost=model()$fitted.values)
+    datasetInputfit$ScoreGrp <- cut(datasetInputfit$FittedLossCost, breaks=c(0,100,150,200,250,300,400,500,600,800,5000), right = FALSE,dig.lab=6)  
+    datasetInputfit$ScoreGrp<-ifelse(datasetInputfit$ScoreGrp=='[0,100)',1,datasetInputfit$ScoreGrp)
+    
+    
+    AggtableObsFit<- aggregate(cbind(LossCostMetric,FittedLossCost ) ~ datasetInputfit$ScoreGrp, data = datasetInputfit, mean)
+    counts <- table(datasetInputfit$ScoreGrp)
+    counts <- prop.table(counts)
+    par(mar=c(5, 4, 4, 6) + 0.1)
+    
+    barplot(counts, pch=15,  xlab=" ", ylab=" ", ylim=c(0,max(counts)+.1), 
+            axes=FALSE,  col="green")
+    mtext("Proportion",side=4,col="green",line=4) 
+    axis(4,  col="green",col.axis="green",las=1)
+    par(new=TRUE)
+    plot(1:length(AggtableObsFit$LossCostMetric),AggtableObsFit$LossCostMetric, col="red", type="b",pch=19,lwd=2, ylab=" ", xlab=" ",xaxt = "n",
+         ylim=c(min(AggtableObsFit$LossCostMetric,AggtableObsFit$FittedLossCost),max(AggtableObsFit$LossCostMetric,AggtableObsFit$FittedLossCost)))
+    par(new=TRUE)
+    plot(1:length(AggtableObsFit$FittedLossCost),AggtableObsFit$FittedLossCost, col="blue", type="b",pch=18,xlab=" ", ylab=" ",lwd=2, axes=FALSE,xaxt = "n",
+         ylim=c(min(AggtableObsFit$LossCostMetric,AggtableObsFit$FittedLossCost),max(AggtableObsFit$LossCostMetric,AggtableObsFit$FittedLossCost)))
+    legend("topleft", legend=c("Observed Average", "Fitted Model Average"),
+           col=c("red", "blue"), lty=1:3, cex=1)
+    grid(nx=NULL,ny=NULL)
+
+```
+
+`input$text_ScoreGraph`
+
+
+
