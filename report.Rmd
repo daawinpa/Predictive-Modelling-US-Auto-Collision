@@ -5,7 +5,7 @@ output:
 ---
 
  
-# Southern Farm Bureau Casualty Insurance Company Symbols Modelling 
+#  Company In-house Symbols Modelling 
 <br />
 *`r input$name`* <br />   
 *`r as.character(format(Sys.Date(), format="%B %d, %Y"))`*
